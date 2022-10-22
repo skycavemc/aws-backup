@@ -8,7 +8,7 @@ import com.amazonaws.services.glacier.AmazonGlacierClientBuilder
 import de.skycave.awsbackup.uploading.Uploader
 import java.io.File
 
-class SkyCaveAWSBackup {
+class SkyCaveAWSBackup(private val args: Array<String>) {
 
     companion object {
         const val DEFAULT_VAULT = "sc_backup"
@@ -27,13 +27,12 @@ class SkyCaveAWSBackup {
             .build()
         uploader = Uploader(client)
 
-        // testing
-        testUpload()
-        client.shutdown()
-    }
+        if (args.isNotEmpty()) {
+            val file = File(args[0])
+            uploader.uploadContent(file)
+        }
 
-    private fun testUpload() {
-        println(uploader.uploadContent(File("largefile")))
+        client.shutdown()
     }
 
 }
