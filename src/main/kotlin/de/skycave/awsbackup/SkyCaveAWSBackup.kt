@@ -3,35 +3,47 @@ package de.skycave.awsbackup
 import com.amazonaws.auth.AWSStaticCredentialsProvider
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.regions.Regions
-import com.amazonaws.services.glacier.AmazonGlacier
-import com.amazonaws.services.glacier.AmazonGlacierClientBuilder
+import com.amazonaws.services.s3.AmazonS3
+import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import de.skycave.awsbackup.uploading.Uploader
-import java.io.File
+import org.apache.commons.logging.impl.Log4JLogger
 
-class SkyCaveAWSBackup(private val args: Array<String>) {
+class SkyCaveAWSBackup {
 
     companion object {
-        const val DEFAULT_VAULT = "sc_backup"
+        const val DEFAULT_VAULT = "skycave-backup"
     }
 
-    private val client: AmazonGlacier
-    private val uploader: Uploader
+    lateinit var client: AmazonS3
+        private set
+    private lateinit var uploader: Uploader
 
-    init {
+    val logger: Log4JLogger = Log4JLogger()
+
+    fun onStart() {
         val credentials = BasicAWSCredentials(
             System.getenv("SC_AWS_ACCESS_KEY"), System.getenv("SC_AWS_SECRET_KEY")
         )
-        client = AmazonGlacierClientBuilder.standard()
+        client = AmazonS3ClientBuilder.standard()
             .withCredentials(AWSStaticCredentialsProvider(credentials))
             .withRegion(Regions.EU_CENTRAL_1)
             .build()
-        uploader = Uploader(client)
 
-        if (args.isNotEmpty()) {
-            val file = File(args[0])
-            uploader.uploadContent(file)
+        if (!client.doesBucketExistV2(DEFAULT_VAULT)) {
+            client.createBucket(DEFAULT_VAULT)
         }
 
+        uploader = Uploader(this)
+    }
+
+    fun accept(args: Array<String>) {
+        if (args.isNotEmpty()) {
+            logger.info("Trying to upload ${args[0]} now.")
+            uploader.upload(args[0])
+        }
+    }
+
+    fun onExit() {
         client.shutdown()
     }
 

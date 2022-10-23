@@ -1,12 +1,14 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "1.7.20"
     application
+    id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
 group = "de.skycave"
-version = "1.0.0"
+version = "2.0.0"
 
 repositories {
     mavenCentral()
@@ -14,8 +16,7 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
-    implementation("com.amazonaws:aws-java-sdk-glacier:1.12.322")
-
+    implementation("com.amazonaws:aws-java-sdk-s3:1.12.322")
 }
 
 tasks.test {
@@ -27,5 +28,12 @@ tasks.withType<KotlinCompile> {
 }
 
 application {
-    mainClass.set("MainKt")
+    mainClass.set("de.skycave.awsbackup.MainKt")
+}
+
+tasks.withType<ShadowJar> {
+    archiveFileName.set("${project.name}-${project.version}.jar")
+    manifest {
+        attributes["Main-Class"] = "de.skycave.awsbackup.MainKt"
+    }
 }

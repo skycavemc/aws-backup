@@ -1,45 +1,28 @@
 package de.skycave.awsbackup.uploading
 
-import com.amazonaws.services.glacier.AmazonGlacier
-import com.amazonaws.services.glacier.model.ResourceNotFoundException
-import com.amazonaws.services.glacier.model.UploadArchiveRequest
-import com.amazonaws.util.BinaryUtils
 import de.skycave.awsbackup.SkyCaveAWSBackup
-import de.skycave.awsbackup.utils.Utils
 import java.io.File
-import java.io.FileNotFoundException
 
 class Uploader(
-    private val glacier: AmazonGlacier
+    private val scBackup: SkyCaveAWSBackup
 ) {
 
     /**
-     * Uploads content to the given glacier vault.
+     * Uploads content to the given S3 bucket.
      */
-    fun uploadContent(file: File, vaultName: String = SkyCaveAWSBackup.DEFAULT_VAULT): String {
+    fun upload(fileName: String, vaultName: String = SkyCaveAWSBackup.DEFAULT_VAULT) {
+        val file = File(fileName)
         if (!file.isFile) {
-            throw FileNotFoundException("File ${file.absolutePath} not found.")
+            scBackup.logger.error("File ${file.absolutePath} not found.")
+            return
         }
 
-        // Get an SHA-256 tree hash value.
-        val chunkSHA256Hashes = Utils.getChunkSHA256Hashes(file)
-        val treeHash = Utils.computeSHA256TreeHash(chunkSHA256Hashes) ?: throw RuntimeException("treeHash is null")
-        val checkVal = BinaryUtils.toHex(treeHash)
-        println("SHA-256 tree hash = $checkVal")
-
-        val uploadRequest = UploadArchiveRequest()
-        uploadRequest.vaultName = vaultName
-        uploadRequest.accountId = "-"
-        uploadRequest.checksum = checkVal
-        uploadRequest.body = file.inputStream()
-        uploadRequest.contentLength = file.length()
-        return try {
-            val res = glacier.uploadArchive(uploadRequest)
-            res.archiveId
-        } catch (e: Exception) {
-            e.printStackTrace()
-            "FAILURE"
-        }
+        scBackup.client.putObject(
+            vaultName,
+            file.name,
+            file
+        )
+        scBackup.logger.info("Upload complete.")
     }
 
 }
