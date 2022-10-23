@@ -6,7 +6,8 @@ import com.amazonaws.regions.Regions
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import de.skycave.awsbackup.uploading.Uploader
-import org.apache.commons.logging.impl.Log4JLogger
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 class SkyCaveAWSBackup {
 
@@ -18,7 +19,7 @@ class SkyCaveAWSBackup {
         private set
     private lateinit var uploader: Uploader
 
-    val logger: Log4JLogger = Log4JLogger()
+    val logger: Logger = LoggerFactory.getLogger(this.javaClass)
 
     fun onStart() {
         val credentials = BasicAWSCredentials(
